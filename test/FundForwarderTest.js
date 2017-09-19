@@ -133,7 +133,7 @@ contract("Fund Forwarder", (accounts) => {
         token.transfer(forwarder.address, 10000)
         let tokenBalance = await token.balanceOf(forwarder.address)
         assert.equal(tokenBalance.toNumber(), 10000)
-        forwarder.claimTokens(token.address)
+        forwarder.claimTokens(token.address, {from: escapeHatchCaller})
         tokenBalance = await token.balanceOf(forwarder.address)
         assert.equal(tokenBalance.toNumber(), 0)
         let hatchBalance = await token.balanceOf(escapeHatchDestination)

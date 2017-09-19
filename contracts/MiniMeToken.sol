@@ -1,4 +1,4 @@
-pragma solidity ^0.4.6;
+pragma solidity ^0.4.15;
 
 /*
     Copyright 2016, Jordi Baylina
@@ -54,7 +54,10 @@ contract TokenController {
 contract Controlled {
     /// @notice The address of the controller is the only address that can call
     ///  a function with this modifier
-    modifier onlyController { if (msg.sender != controller) throw; _; }
+    modifier onlyController { 
+        require(msg.sender == controller);
+        _;
+    }
 
     address public controller;
 
@@ -79,7 +82,7 @@ contract MiniMeToken is Controlled {
     string public name;                //The Token's name: e.g. DigixDAO Tokens
     uint8 public decimals;             //Number of decimals of the smallest unit
     string public symbol;              //An identifier: e.g. REP
-    string public version = 'MMT_0.1'; //An arbitrary versioning scheme
+    string public version = "MMT_0.1"; //An arbitrary versioning scheme
 
 
     /// @dev `Checkpoint` is the structure that attaches a block number to a
@@ -168,7 +171,7 @@ contract MiniMeToken is Controlled {
     /// @param _amount The amount of tokens to be transferred
     /// @return Whether the transfer was successful or not
     function transfer(address _to, uint256 _amount) returns (bool success) {
-        if (!transfersEnabled) throw;
+        require(transfersEnabled);
         return doTransfer(msg.sender, _to, _amount);
     }
 
@@ -179,17 +182,19 @@ contract MiniMeToken is Controlled {
     /// @param _amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
     function transferFrom(address _from, address _to, uint256 _amount
-    ) returns (bool success) {
+    ) returns (bool success) 
+    {
 
         // The controller of this contract can move tokens around at will,
         //  this is important to recognize! Confirm that you trust the
         //  controller of this contract, which in most situations should be
         //  another open source smart contract or 0x0
         if (msg.sender != controller) {
-            if (!transfersEnabled) throw;
+            require(transfersEnabled);
 
             // The standard ERC 20 transferFrom functionality
-            if (allowed[_from][msg.sender] < _amount) return false;
+            if (allowed[_from][msg.sender] < _amount) 
+                return false;
             allowed[_from][msg.sender] -= _amount;
         }
         return doTransfer(_from, _to, _amount);
@@ -209,7 +214,7 @@ contract MiniMeToken is Controlled {
            }
 
            // Do not allow transfer to 0x0 or the token contract itself
-           if ((_to == 0) || (_to == address(this))) throw;
+           require(!(_to == 0) && !(_to == address(this)));
 
            // If the amount being transfered is more than the balance of the
            //  account the transfer returns false
@@ -220,8 +225,7 @@ contract MiniMeToken is Controlled {
 
            // Alerts the token controller of the transfer
            if (isContract(controller)) {
-               if (!TokenController(controller).onTransfer(_from, _to, _amount))
-               throw;
+               require(TokenController(controller).onTransfer(_from, _to, _amount));
            }
 
            // First update the balance array with the new value for the address
@@ -231,7 +235,7 @@ contract MiniMeToken is Controlled {
            // Then update the balance array with the new value for the address
            //  receiving the tokens
            var previousBalanceTo = balanceOfAt(_to, block.number);
-           if (previousBalanceTo + _amount < previousBalanceTo) throw; // Check for overflow
+           require(previousBalanceTo + _amount >= previousBalanceTo); // Check for overflow
            updateValueAtNow(balances[_to], previousBalanceTo + _amount);
 
            // An event to make the transfer easy to find on the blockchain
@@ -253,18 +257,17 @@ contract MiniMeToken is Controlled {
     /// @param _amount The amount of tokens to be approved for transfer
     /// @return True if the approval was successful
     function approve(address _spender, uint256 _amount) returns (bool success) {
-        if (!transfersEnabled) throw;
+        require(transfersEnabled);
 
         // To change the approve amount you first have to reduce the addresses`
         //  allowance to zero by calling `approve(_spender,0)` if it is not
         //  already 0 to mitigate the race condition described here:
         //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-        if ((_amount!=0) && (allowed[msg.sender][_spender] !=0)) throw;
+        require((_amount==0) || (allowed[msg.sender][_spender] == 0));
 
         // Alerts the token controller of the approve function call
         if (isContract(controller)) {
-            if (!TokenController(controller).onApprove(msg.sender, _spender, _amount))
-                throw;
+            require(TokenController(controller).onApprove(msg.sender, _spender, _amount));
         }
 
         allowed[msg.sender][_spender] = _amount;
@@ -291,7 +294,7 @@ contract MiniMeToken is Controlled {
     /// @return True if the function call was successful
     function approveAndCall(address _spender, uint256 _amount, bytes _extraData
     ) returns (bool success) {
-        if (!approve(_spender, _amount)) throw;
+        require(approve(_spender, _amount));
 
         ApproveAndCallFallBack(_spender).receiveApproval(
             msg.sender,
@@ -319,7 +322,8 @@ contract MiniMeToken is Controlled {
     /// @param _blockNumber The block number when the balance is queried
     /// @return The balance at `_blockNumber`
     function balanceOfAt(address _owner, uint _blockNumber) constant
-        returns (uint) {
+    returns (uint) 
+    {
 
         // These next few lines are used when the balance of the token is
         //  requested before a check point was ever created for this token, it
@@ -414,10 +418,10 @@ contract MiniMeToken is Controlled {
     function generateTokens(address _owner, uint _amount
     ) onlyController returns (bool) {
         uint curTotalSupply = getValueAt(totalSupplyHistory, block.number);
-        if (curTotalSupply + _amount < curTotalSupply) throw; // Check for overflow
+        require(curTotalSupply + _amount >= curTotalSupply); // Check for overflow
         updateValueAtNow(totalSupplyHistory, curTotalSupply + _amount);
         var previousBalanceTo = balanceOf(_owner);
-        if (previousBalanceTo + _amount < previousBalanceTo) throw; // Check for overflow
+        require(previousBalanceTo + _amount >= previousBalanceTo); // Check for overflow
         updateValueAtNow(balances[_owner], previousBalanceTo + _amount);
         Transfer(0, _owner, _amount);
         return true;
@@ -431,10 +435,10 @@ contract MiniMeToken is Controlled {
     function destroyTokens(address _owner, uint _amount
     ) onlyController returns (bool) {
         uint curTotalSupply = getValueAt(totalSupplyHistory, block.number);
-        if (curTotalSupply < _amount) throw;
+        require(curTotalSupply >= _amount);
         updateValueAtNow(totalSupplyHistory, curTotalSupply - _amount);
         var previousBalanceFrom = balanceOf(_owner);
-        if (previousBalanceFrom < _amount) throw;
+        require(previousBalanceFrom >= _amount);
         updateValueAtNow(balances[_owner], previousBalanceFrom - _amount);
         Transfer(_owner, 0, _amount);
         return true;
@@ -520,12 +524,8 @@ contract MiniMeToken is Controlled {
     ///  set to 0, then the `proxyPayment` method is called which relays the
     ///  ether and creates tokens as described in the token controller contract
     function ()  payable {
-        if (isContract(controller)) {
-            if (! TokenController(controller).proxyPayment.value(msg.value)(msg.sender))
-                throw;
-        } else {
-            throw;
-        }
+        require(!isContract(controller));
+        require(TokenController(controller).proxyPayment.value(msg.value)(msg.sender));        
     }
 
 

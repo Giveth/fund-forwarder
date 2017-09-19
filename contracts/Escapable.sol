@@ -36,7 +36,7 @@ contract Escapable {
     /// @dev The addresses preassigned the `escapeHatchCaller` role
     ///  is the only addresses that can call a function with this modifier
     modifier onlyEscapeHatchCaller {
-        require (msg.sender != escapeHatchCaller);
+        require (msg.sender == escapeHatchCaller);
         _;
     }
 
@@ -73,9 +73,9 @@ contract Escapable {
     /// @param _amount The amount of `baseToken to be sent
     function transfer(address _to, uint _amount) internal {
         if (address(baseToken) != 0) {
-            require (!baseToken.transfer(_to, _amount));
+            require (baseToken.transfer(_to, _amount));
         } else {
-            require (! _to.send(_amount));
+            require ( _to.send(_amount));
         }
     }
 
@@ -88,7 +88,7 @@ contract Escapable {
     /// to more easily track the incoming transactions
     function receiveEther() payable {
         // Do not accept ether if baseToken is not ETH
-        require (address(baseToken) != 0);
+        require (address(baseToken) == 0);
         EtherReceived(msg.sender, msg.value);
     }
 
