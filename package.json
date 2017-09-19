@@ -1,0 +1,17 @@
+{
+  "name": "fund-forwarder",
+  "version": "1.0.0",
+  "description": "Smart Contract to implement fund forwarding",
+  "main": "index.js",
+  "scripts": {
+    "test": "truffle test"
+  },
+  "author": "Arthur Lunn",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "truffle": "^3.4.9"
+  },
+  "dependencies": {
+    "zeppelin-solidity": "^1.2.0"
+  }
+}
