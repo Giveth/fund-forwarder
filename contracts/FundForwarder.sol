@@ -18,9 +18,9 @@ pragma solidity ^0.4.15;
 
 /// @title Fund Forwarder
 /// @authors Vojtech Simetka, Jordi Baylina, Dani Philia, Arthur Lunn
-/// @notice This contract is used to forward funds to a Giveth Campaign with an escape. 
-///  The fund value is sent directly to designated Campaign.
-///  The EscapeHatch  allows removal of any other tokens deposited by accident.
+/// @notice This contract is used to forward funds to a Giveth Campaign 
+///  with an escapeHatch.The fund value is sent directly to designated Campaign.
+///  The escapeHatch allows removal of any other tokens deposited by accident.
 
 import './Escapable.sol';
 
@@ -60,8 +60,8 @@ contract FundForwarder is Escapable {
     }
 
     /// @notice Donate ETH to the `beneficiary`, and if there is enough in the 
-    ///  contract double it. The `msg.sender` is rewarded with Campaign tokens
-    // depending on how one calls into this fallback function, i.e. with .send ( hard limit of 2300 gas ) vs .value (provides fallback with all the available gas of the caller), it may throw
+    ///  contract double it. The `msg.sender` is rewarded with Campaign tokens.
+    ///  This contract may have a high gasLimit requirement.
     function () payable {
         uint amount;
         amount = msg.value;
