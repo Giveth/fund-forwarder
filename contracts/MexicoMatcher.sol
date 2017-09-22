@@ -1,6 +1,6 @@
 pragma solidity ^0.4.15;
 /*
-    Copyright 2017, Arthur Lunn
+    Copyright 2017, Griff Green
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,26 +16,17 @@ pragma solidity ^0.4.15;
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/// @title Fund Forwarder
-/// @authors Vojtech Simetka, Jordi Baylina, Dani Philia, Arthur Lunn
+/// @title Mexico Matcher
+/// @authors Vojtech Simetka, Jordi Baylina, Dani Philia, Arthur Lunn, Griff Green
 /// @notice This contract is used to forward funds to a Giveth Campaign 
 ///  with an escapeHatch.The fund value is sent directly to designated Campaign.
 ///  The escapeHatch allows removal of any other tokens deposited by accident.
 
 import './Escapable.sol';
 
-/// @dev This is an empty contract to declare `proxyPayment()` to comply with
-///  Giveth Campaigns so that tokens will be generated when donations are sent
-contract Campaign {
-    /// @notice `proxyPayment()` allows the caller to send ether to the Campaign and
-    /// have the tokens created in an address of their choosing
-    /// @param _owner The address that will hold the newly created tokens
-    function proxyPayment(address _owner) payable returns(bool);
-}
-
 /// @dev The main contract which forwards funds sent to contract.
-contract FundForwarder is Escapable {
-    Campaign public beneficiary; // expected to be a Giveth campaign
+contract MexicoMatcher is Escapable {
+    address public beneficiary; // expected to be a Giveth campaign
 
     /// @notice The Constructor assigns the `beneficiary`, the
     ///  `escapeHatchDestination` and the `escapeHatchCaller` as well as deploys
@@ -48,8 +39,8 @@ contract FundForwarder is Escapable {
     ///  to call `escapeHatch()` to send the ether in this contract to the 
     ///  `escapeHatchDestination` it would be ideal that `escapeHatchCaller`
     ///  cannot move funds out of `escapeHatchDestination`
-    function FundForwarder(
-            Campaign _beneficiary, // address that receives ether
+    function MexicoMatcher(
+            address _beneficiary, // address that receives ether
             address _escapeHatchCaller,
             address _escapeHatchDestination
         )
@@ -58,16 +49,30 @@ contract FundForwarder is Escapable {
     {
         beneficiary = _beneficiary;
     }
-
+    
+    /// @notice Simple function to deposit more ETH to match future donations
+    function depositETH() payable {
+        DonationDeposited4Matching(msg.sender, msg.value);
+    }
     /// @notice Donate ETH to the `beneficiary`, and if there is enough in the 
-    ///  contract double it. The `msg.sender` is rewarded with Campaign tokens.
-    ///  This contract may have a high gasLimit requirement.
+    ///  contract double it. The `msg.sender` is rewarded with Campaign tokens;
+    ///  This contract may have a high gasLimit requirement
     function () payable {
         uint amount;
-        amount = msg.value;
-        // Send the ETH to the beneficiary so that they receive Campaign tokens
-        require (beneficiary.proxyPayment.value(amount)(msg.sender));
-        FundsSent(msg.sender, amount);
+        
+        // If there is enough ETH in the contract to double it, DOUBLE IT!
+        if (this.balance >= multiply(msg.value, 2)){
+            amount = multiply(msg.value, 2); // do it two it!
+        
+            // Send ETH to the beneficiary; must be an account, not a contract
+            require (beneficiary.send(amount));
+            DonationMatched(msg.sender, amount);
+        } else {
+            amount = this.balance;
+            require (beneficiary.send(amount));
+            DonationSentButNotMatched(msg.sender, amount);
     }
-    event FundsSent(address indexed sender, uint amount);
+    event DonationDeposited4Matching(address indexed sender, uint amount);
+    event DonationMatched(address indexed sender, uint amount);
+    event DonationSentButNotMatched(address indexed sender, uint amount);
 }
