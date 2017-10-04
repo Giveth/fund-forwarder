@@ -12,6 +12,8 @@
     "truffle": "^3.4.9"
   },
   "dependencies": {
+    "giveth-common-contracts": "^0.1.0",
+    "minimetoken": "^0.1.7",
     "zeppelin-solidity": "^1.2.0"
   }
 }

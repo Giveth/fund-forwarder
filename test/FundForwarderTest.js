@@ -1,18 +1,14 @@
 // Contract Imports
 const FundForwarder = artifacts.require('../contracts/FundForwarder.sol')
+//const Campaign = artifacts.require('../node_modules/minimetoken/contracts/SampleCampaign-TokenController.sol')
 const GivethCampaign = artifacts.require('../contracts/GivethCampaign.sol')
-const Token = artifacts.require("../contracts/MiniMeToken.sol")
+const Token = artifacts.require("../node_modules/minimetoken/contracts/MiniMeToken.sol")
 const TokenFactory = artifacts.require("MiniMeTokenFactory")
 const Vault = artifacts.require("../contracts/Vault.sol")
 
 // Helper Imports
-const filterCoverageTopics = require("./helpers/filterCoverageTopics.js")
-const days = require("./helpers/days.js")
-const hours = require("./helpers/hours.js")
-const wei = require("./helpers/wei.js")
-const assertJump = require("./helpers/assertJump.js")
-const timeTravel = require('./helpers/timeTravel.js')
-
+const timeTravel = require("../node_modules/giveth-common-contracts/test/helpers/timeTravel.js")
+const Day = 86400;
 contract("Fund Forwarder", (accounts) => {
     const {
         0: owner,
@@ -55,7 +51,7 @@ contract("Fund Forwarder", (accounts) => {
         )
         campaign = await GivethCampaign.new(
             now,
-            now + days(365),
+            now + (Day * 365),
             web3.toWei(10000), // 10000 ether for beta
             vault.address, //vaultAddress
             token.address 
@@ -64,7 +60,7 @@ contract("Fund Forwarder", (accounts) => {
         await T.changeController(campaign.address)
 
         forwarder = await FundForwarder.new(
-            // deploy a GivethCampaign here
+            // deploy a Campaign here
             campaign.address,
             escapeHatchCaller,
             escapeHatchDestination
@@ -72,7 +68,7 @@ contract("Fund Forwarder", (accounts) => {
         benfic = await forwarder.beneficiary()
         Campaign = GivethCampaign.at(benfic)
         // Advance the campain two days
-        await timeTravel(days(2))
+        await timeTravel(Day * 2)
         now = web3.eth.getBlock("latest").timestamp
     })
 
@@ -133,7 +129,7 @@ contract("Fund Forwarder", (accounts) => {
         token.transfer(forwarder.address, 10000)
         let tokenBalance = await token.balanceOf(forwarder.address)
         assert.equal(tokenBalance.toNumber(), 10000)
-        forwarder.claimTokens(token.address, {from: escapeHatchCaller})
+        forwarder.escapeHatch(token.address, {from: escapeHatchCaller})
         tokenBalance = await token.balanceOf(forwarder.address)
         assert.equal(tokenBalance.toNumber(), 0)
         let hatchBalance = await token.balanceOf(escapeHatchDestination)

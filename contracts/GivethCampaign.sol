@@ -24,7 +24,7 @@ pragma solidity ^0.4.15;
 ///  funds for non-profit causes, but it can be customized for any variety of
 ///  purposes.
 
-import "./MiniMeToken.sol";
+import "../node_modules/minimetoken/contracts/MiniMeToken.sol";
 
 
 /// @dev `Owned` is a base level contract that assigns an `owner` that can be
