@@ -59,9 +59,8 @@ contract FundForwarder is Escapable {
         beneficiary = _beneficiary;
     }
 
-    /// @notice Donate ETH to the `beneficiary`, and if there is enough in the 
-    ///  contract double it. The `msg.sender` is rewarded with Campaign tokens.
-    ///  This contract may have a high gasLimit requirement.
+    /// @notice Directly forward Eth to `beneficiary`. The `msg.sender` is rewarded with Campaign tokens.
+    ///  This contract may have a high gasLimit requirement dependent on beneficiary.
     function () payable {
         uint amount;
         amount = msg.value;
