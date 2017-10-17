@@ -17,12 +17,12 @@ pragma solidity ^0.4.15;
  */
 
 /// @title Fund Forwarder
-/// @authors Vojtech Simetka, Jordi Baylina, Dani Philia, Arthur Lunn
+/// @authors Vojtech Simetka, Jordi Baylina, Dani Philia, Arthur Lunn (hardly)
 /// @notice This contract is used to forward funds to a Giveth Campaign 
 ///  with an escapeHatch.The fund value is sent directly to designated Campaign.
 ///  The escapeHatch allows removal of any other tokens deposited by accident.
 
-import './Escapable.sol';
+import '../node_modules/giveth-common-contracts/contracts/Escapable.sol';
 
 /// @dev This is an empty contract to declare `proxyPayment()` to comply with
 ///  Giveth Campaigns so that tokens will be generated when donations are sent
@@ -54,19 +54,20 @@ contract FundForwarder is Escapable {
             address _escapeHatchDestination
         )
         // Set the escape hatch to accept ether (0x0)
-        Escapable(0x0, _escapeHatchCaller, _escapeHatchDestination)
+        Escapable(_escapeHatchCaller, _escapeHatchDestination)
     {
         beneficiary = _beneficiary;
     }
 
-    /// @notice Donate ETH to the `beneficiary`, and if there is enough in the 
-    ///  contract double it. The `msg.sender` is rewarded with Campaign tokens.
-    ///  This contract may have a high gasLimit requirement.
+    /// @notice Directly forward Eth to `beneficiary`. The `msg.sender` is rewarded with Campaign tokens.
+    ///  This contract may have a high gasLimit requirement dependent on beneficiary.
     function () payable {
         uint amount;
         amount = msg.value;
         // Send the ETH to the beneficiary so that they receive Campaign tokens
-        require (beneficiary.proxyPayment.value(amount)(msg.sender));
+        require (beneficiary.proxyPayment.value(amount)
+        (msg.sender)
+        );
         FundsSent(msg.sender, amount);
     }
     event FundsSent(address indexed sender, uint amount);
