@@ -63,11 +63,9 @@ contract FundForwarder is Escapable {
     ///  `msg.sender` is rewarded with Campaign tokens; this contract may have a
     ///  high gasLimit requirement dependent on beneficiary
     function () payable {
-        uint amount;
-        amount = msg.value;
         // Send the ETH to the beneficiary so that they receive Campaign tokens
-        require (beneficiary.proxyPayment.value(amount)(msg.sender));
-        FundsSent(msg.sender, amount);
+        require (beneficiary.proxyPayment.value(msg.value)(msg.sender));
+        FundsSent(msg.sender, msg.value);
     }
     event FundsSent(address indexed sender, uint amount);
 }
